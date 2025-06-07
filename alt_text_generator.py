@@ -1,13 +1,9 @@
 import streamlit as st
-
-# alt_text_generator_v6.py
-
-import streamlit as st
 from PIL import Image
 import pandas as pd
 import io
 from transformers import BlipProcessor, BlipForConditionalGeneration
-from googletrans import Translator
+from deep_translator import GoogleTranslator
 import language_tool_python
 
 # Ladda modellen
@@ -49,8 +45,7 @@ uploaded_files = st.file_uploader(
     accept_multiple_files=True
 )
 
-# Starta översättare och språkverktyg
-translator = Translator()
+# Starta språkverktyg
 tool = language_tool_python.LanguageTool('sv' if language == "Svenska" else 'en-US')
 
 # Funktion för att skapa metabeskrivning
@@ -70,7 +65,7 @@ if uploaded_files and st.button("Generera Alt-Texter"):
 
         # Översättning om svenska är valt
         if language == "Svenska":
-            description = translator.translate(description, src='en', dest='sv').text
+            description = GoogleTranslator(source='en', target='sv').translate(description)
 
         # Skapa alt-text
         if style == "Beskrivande":
