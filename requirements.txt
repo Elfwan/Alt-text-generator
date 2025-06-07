@@ -2,5 +2,6 @@ streamlit
 Pillow
 pandas
 transformers
-googletrans==4.0.0-rc1
+deep-translator
 language_tool_python
+torch
