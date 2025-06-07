@@ -1,4 +1,4 @@
-Här är koden: 
+import streamlit as st
 
 # alt_text_generator_v6.py
 
