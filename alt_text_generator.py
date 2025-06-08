@@ -18,37 +18,20 @@ if 'alt_texts' not in st.session_state:
     st.session_state['alt_texts'] = []
 
 # Sidhuvud
-st.title("Alt-Text Generator - Komplett Version")
-st.write("Ladda upp bilder, generera, redigera och skapa SEO-metabeskrivningar!")
+st.title("Alt-Text Generator")
+st.write("Ladda upp bilder, generera och redigera alt-texter. Export sker som CSV med filnamn och alt-text.")
 
 # Välj språk
-language = st.radio(
-    "Välj språk för alt-texterna:",
-    ("Svenska", "Engelska")
-)
+language = st.radio("Välj språk för alt-texterna:", ("Svenska", "Engelska"))
 
 # Stilval
-style = st.selectbox(
-    "Välj stil på dina alt-texter:",
-    ("Beskrivande", "SEO-optimerad", "Tillgänglighetsanpassad")
-)
+style = st.selectbox("Välj stil på dina alt-texter:", ("Beskrivande", "SEO-optimerad", "Tillgänglighetsanpassad"))
 
-# Anpassade SEO-nyckelord
+# SEO-nyckelord (frivilligt)
 seo_keywords = st.text_input("Ange SEO-nyckelord (valfritt, separera med kommatecken)")
 
 # Ladda upp bilder
-uploaded_files = st.file_uploader(
-    "Välj en eller flera bilder...",
-    type=["jpg", "jpeg", "png"],
-    accept_multiple_files=True
-)
-
-# Funktion för att skapa metabeskrivning
-def generate_meta(description):
-    if language == "Svenska":
-        return f"Upptäck en bild som visar {description.lower()}. Perfekt för SEO och digital marknadsföring."
-    else:
-        return f"Discover an image depicting {description.lower()}. Perfect for SEO and digital marketing."
+uploaded_files = st.file_uploader("Välj en eller flera bilder...", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
 # Generera alt-texter
 if uploaded_files and st.button("Generera Alt-Texter"):
@@ -77,49 +60,34 @@ if uploaded_files and st.button("Generera Alt-Texter"):
             else:
                 alt_text = f"An illustration or a photo depicting: {description.lower()}."
 
-        # Ingen automatisk rättning – spara alt-texten som den är
-        corrected_text = alt_text
-
-        # Metabeskrivning om SEO-stil är vald
-        meta_desc = generate_meta(description) if style == "SEO-optimerad" else ""
-
+        # Spara alt-text
         st.session_state['alt_texts'].append({
             "filnamn": uploaded_file.name,
-            "alt-text": corrected_text,
-            "metabeskrivning": meta_desc
+            "alt-text": alt_text
         })
 
-# Redigera manuellt
+# Redigering och nedladdning
 if st.session_state['alt_texts']:
     st.subheader("Förhandsgranskning och redigering:")
 
     edited_texts = []
     for idx, entry in enumerate(st.session_state['alt_texts']):
         st.markdown(f"**{entry['filnamn']}**")
-
         edited_alt = st.text_area(f"Alt-text ({entry['filnamn']})", value=entry['alt-text'], key=f"alt_{idx}")
-        st.text_area(f"Förhandsgranskning ({entry['filnamn']})", value=edited_alt, height=100, key=f"preview_{idx}")
-
-        # Visa och redigera även metabeskrivning
-        if entry['metabeskrivning']:
-            meta_input = st.text_area(f"Metabeskrivning ({entry['filnamn']})", value=entry['metabeskrivning'], key=f"meta_{idx}")
-        else:
-            meta_input = ""
 
         edited_texts.append({
             "filnamn": entry['filnamn'],
-            "alt-text": edited_alt,
-            "metabeskrivning": meta_input
+            "alt-text": edited_alt
         })
 
-    # Skapa CSV
+    # Skapa CSV med rätt teckenkodning
     df = pd.DataFrame(edited_texts)
-    csv = df.to_csv(index=False).encode('utf-8')
+    csv = df.to_csv(index=False).encode('utf-8-sig')
 
-    # Ladda ner
+    # Nedladdningsknapp
     st.download_button(
-        label="Ladda ner alla alt-texter och metabeskrivningar som CSV",
+        label="Ladda ner CSV (filnamn & alt-text)",
         data=csv,
-        file_name='alt_texter_redigerade.csv',
+        file_name='alt_texter.csv',
         mime='text/csv',
     )
