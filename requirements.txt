@@ -2,6 +2,5 @@ streamlit
 Pillow
 pandas
 transformers
-deep-translator
-language_tool_python
 torch
+deep-translator
