@@ -24,7 +24,10 @@ st.write("Ladda upp bilder, generera och redigera alt-texter. Exportera som CSV.
 # Rensa-knapp
 if st.button("Rensa allt"):
     st.session_state['alt_texts'] = []
+    st.session_state['clear_uploader'] = True
     st.success("Formuläret har rensats. Ladda upp nya bilder nedan.")
+else:
+    st.session_state['clear_uploader'] = False
 
 # Språk- och stilval
 language = st.radio("Välj språk för alt-texterna:", ("Svenska", "Engelska"))
@@ -32,7 +35,12 @@ style = st.selectbox("Välj stil på dina alt-texter:", ("Beskrivande", "SEO-opt
 seo_keywords = st.text_input("Ange SEO-nyckelord (valfritt, separera med kommatecken)")
 
 # Bilduppladdning
-uploaded_files = st.file_uploader("Välj en eller flera bilder...", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "Välj en eller flera bilder...", 
+    type=["jpg", "jpeg", "png"], 
+    accept_multiple_files=True,
+    key=None if not st.session_state.get('clear_uploader') else "new_upload"
+)
 
 # Avgör bildtyp (foto/illustration)
 def guess_media_type(desc):
@@ -45,13 +53,16 @@ def guess_media_type(desc):
 if uploaded_files and st.button("Generera Alt-Texter"):
     for uploaded_file in uploaded_files:
         image = Image.open(uploaded_file)
-        inputs = processor(image, return_tensors="pt", text="a detailed image of")
+        inputs = processor(image, return_tensors="pt")  # Ingen prompt
         out = model.generate(**inputs)
         description = processor.decode(out[0], skip_special_tokens=True)
 
         # Översätt till svenska vid behov
         if language == "Svenska":
             description = GoogleTranslator(source='en', target='sv').translate(description)
+
+        # Ta bort onödig fras om den finns
+        description = description.replace("en detaljerad bild av ", "").replace("a detailed image of ", "").strip()
 
         # Identifiera typ
         media_type = guess_media_type(description)
