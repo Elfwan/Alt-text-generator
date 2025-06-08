@@ -1,6 +1,5 @@
 streamlit
 Pillow
-pandas
 transformers
 torch
-deep-translator
+deep_translator
