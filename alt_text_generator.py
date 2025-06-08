@@ -4,6 +4,7 @@ import pandas as pd
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from deep_translator import GoogleTranslator
 
+# Ladda modell
 @st.cache_resource
 def load_model():
     processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-large")
@@ -12,28 +13,35 @@ def load_model():
 
 processor, model = load_model()
 
+# Initiera session state
 if 'alt_texts' not in st.session_state:
     st.session_state['alt_texts'] = []
 
+# Rubrik
 st.title("Alt-Text Generator")
-st.write("Ladda upp bilder, generera och redigera alt-texter. Export som CSV.")
+st.write("Ladda upp bilder, generera och redigera alt-texter. Exportera som CSV.")
 
+# Rensa-knapp
 if st.button("Rensa allt"):
     st.session_state['alt_texts'] = []
-    st.experimental_rerun()
+    st.success("Formuläret har rensats. Ladda upp nya bilder nedan.")
 
+# Språk- och stilval
 language = st.radio("Välj språk för alt-texterna:", ("Svenska", "Engelska"))
 style = st.selectbox("Välj stil på dina alt-texter:", ("Beskrivande", "SEO-optimerad", "Tillgänglighetsanpassad"))
 seo_keywords = st.text_input("Ange SEO-nyckelord (valfritt, separera med kommatecken)")
 
+# Bilduppladdning
 uploaded_files = st.file_uploader("Välj en eller flera bilder...", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
+# Avgör bildtyp (foto/illustration)
 def guess_media_type(desc):
     desc = desc.lower()
     if any(word in desc for word in ["drawing", "illustration", "sketch", "painting", "vector"]):
         return "illustration"
     return "foto"
 
+# Generering
 if uploaded_files and st.button("Generera Alt-Texter"):
     for uploaded_file in uploaded_files:
         image = Image.open(uploaded_file)
@@ -41,15 +49,18 @@ if uploaded_files and st.button("Generera Alt-Texter"):
         out = model.generate(**inputs)
         description = processor.decode(out[0], skip_special_tokens=True)
 
+        # Översätt till svenska vid behov
         if language == "Svenska":
             description = GoogleTranslator(source='en', target='sv').translate(description)
 
+        # Identifiera typ
         media_type = guess_media_type(description)
         if language == "Svenska":
             typ = "En illustration" if media_type == "illustration" else "Ett foto"
         else:
             typ = "An illustration" if media_type == "illustration" else "A photo"
 
+        # Stilhantering
         if style == "Beskrivande":
             alt_text = f"{description.capitalize()}."
         elif style == "SEO-optimerad":
@@ -64,11 +75,13 @@ if uploaded_files and st.button("Generera Alt-Texter"):
             else:
                 alt_text = f"{typ} depicting: {description.lower()}."
 
+        # Lägg till i session state
         st.session_state['alt_texts'].append({
             "filnamn": uploaded_file.name,
             "alt-text": alt_text
         })
 
+# Förhandsgranska och redigera
 if st.session_state['alt_texts']:
     st.subheader("Förhandsgranskning och redigering:")
     edited_texts = []
@@ -81,8 +94,9 @@ if st.session_state['alt_texts']:
             "alt-text": edited_alt
         })
 
+    # Skapa CSV (med rätt encoding)
     df = pd.DataFrame(edited_texts, columns=["filnamn", "alt-text"])
-    csv = df.to_csv(index=False).encode('utf-8-sig')
+    csv = df.to_csv(index=False, encoding='utf-8-sig')
 
     st.download_button(
         label="Ladda ner CSV (filnamn & alt-text)",
