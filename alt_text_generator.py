@@ -1,10 +1,8 @@
 import streamlit as st
 from PIL import Image
 import pandas as pd
-import io
 from transformers import BlipProcessor, BlipForConditionalGeneration
 from deep_translator import GoogleTranslator
-import language_tool_python
 
 # Ladda modellen
 @st.cache_resource
@@ -15,13 +13,13 @@ def load_model():
 
 processor, model = load_model()
 
-# Spara data i session_state
+# Initiera session_state
 if 'alt_texts' not in st.session_state:
     st.session_state['alt_texts'] = []
 
 # Sidhuvud
 st.title("Alt-Text Generator - Komplett Version")
-st.write("Ladda upp bilder, generera, redigera, rätta och skapa SEO-metabeskrivningar!")
+st.write("Ladda upp bilder, generera, redigera och skapa SEO-metabeskrivningar!")
 
 # Välj språk
 language = st.radio(
@@ -44,9 +42,6 @@ uploaded_files = st.file_uploader(
     type=["jpg", "jpeg", "png"],
     accept_multiple_files=True
 )
-
-# Starta språkverktyg
-tool = language_tool_python.LanguageTool('sv' if language == "Svenska" else 'en-US')
 
 # Funktion för att skapa metabeskrivning
 def generate_meta(description):
@@ -82,8 +77,8 @@ if uploaded_files and st.button("Generera Alt-Texter"):
             else:
                 alt_text = f"An illustration or a photo depicting: {description.lower()}."
 
-        # Rättstavning
-        corrected_text = tool.correct(alt_text)
+        # Ingen automatisk rättning – spara alt-texten som den är
+        corrected_text = alt_text
 
         # Metabeskrivning om SEO-stil är vald
         meta_desc = generate_meta(description) if style == "SEO-optimerad" else ""
@@ -94,17 +89,16 @@ if uploaded_files and st.button("Generera Alt-Texter"):
             "metabeskrivning": meta_desc
         })
 
-# Redigera och live-rätta
+# Redigera manuellt
 if st.session_state['alt_texts']:
-    st.subheader("Förhandsgranskning och live-rättning:")
+    st.subheader("Förhandsgranskning och redigering:")
 
     edited_texts = []
     for idx, entry in enumerate(st.session_state['alt_texts']):
         st.markdown(f"**{entry['filnamn']}**")
 
         edited_alt = st.text_area(f"Alt-text ({entry['filnamn']})", value=entry['alt-text'], key=f"alt_{idx}")
-        corrected_live = tool.correct(edited_alt)
-        st.text_area(f"Rättad version ({entry['filnamn']})", value=corrected_live, height=100, key=f"corr_{idx}")
+        st.text_area(f"Förhandsgranskning ({entry['filnamn']})", value=edited_alt, height=100, key=f"preview_{idx}")
 
         # Visa och redigera även metabeskrivning
         if entry['metabeskrivning']:
@@ -114,7 +108,7 @@ if st.session_state['alt_texts']:
 
         edited_texts.append({
             "filnamn": entry['filnamn'],
-            "alt-text": corrected_live,
+            "alt-text": edited_alt,
             "metabeskrivning": meta_input
         })
 
